@@ -80,7 +80,7 @@ export default function Home() {
     setEmployeeSalary((prev) => prev + amount);
   };
 
-  // Salary & Yield Bonus Claim Handler
+  // Salary & Yield Bonus Claim Handler (With Automated Strategy Deficit Withdrawal)
   const handleClaimSalary = (amount: number) => {
     let remainingToDeduct = amount;
 
@@ -98,11 +98,27 @@ export default function Home() {
       setEmployeeSalary((prev) => Math.max(0, prev - remainingToDeduct));
     }
 
-    setVaultStats((prev) => ({
-      ...prev,
-      totalPrincipal: Math.max(0, prev.totalPrincipal - amount),
-      liquidBuffer: Math.max(0, prev.liquidBuffer - amount),
-    }));
+    setVaultStats((prev) => {
+      let currentLiquid = prev.liquidBuffer;
+      let currentStrategy = prev.strategyAssets;
+      let newLiquid = currentLiquid;
+      let newStrategy = currentStrategy;
+
+      if (currentLiquid >= amount) {
+        newLiquid = currentLiquid - amount;
+      } else {
+        const deficit = amount - currentLiquid;
+        newLiquid = 0;
+        newStrategy = Math.max(0, currentStrategy - deficit);
+      }
+
+      return {
+        ...prev,
+        totalPrincipal: Math.max(0, prev.totalPrincipal - amount),
+        liquidBuffer: newLiquid,
+        strategyAssets: newStrategy,
+      };
+    });
   };
 
   return (

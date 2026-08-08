@@ -53,9 +53,17 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
     const maxBalance = employeeSalary + employeeYieldShare;
     if (claimAmount <= 0 || claimAmount > maxBalance) return;
 
+    const isDeficit = claimAmount > liquidBuffer;
+    const deficitAmount = isDeficit ? claimAmount - liquidBuffer : 0;
+
     onClaimSalary(claimAmount);
-    setClaimSuccess(`✅ Successfully claimed $${claimAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC (Principal + Yield Bonus) to your wallet!`);
-    setTimeout(() => setClaimSuccess(""), 5000);
+    
+    if (isDeficit) {
+      setClaimSuccess(`⚡ Auto-Rebalance Claimed: $${claimAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC! ($${liquidBuffer.toLocaleString("en-US", { minimumFractionDigits: 2 })} from Liquid Buffer + $${deficitAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} pulled directly from Aave Strategy)`);
+    } else {
+      setClaimSuccess(`✅ Successfully claimed $${claimAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC to your wallet!`);
+    }
+    setTimeout(() => setClaimSuccess(""), 6000);
   };
 
   return (
@@ -175,6 +183,15 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
               required
             />
           </div>
+
+          {claimAmount > liquidBuffer && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong>Automated Liquidity Rebalance:</strong> Claim exceeds current liquid buffer (${liquidBuffer.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC). Vault will automatically withdraw <strong>${(claimAmount - liquidBuffer).toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC</strong> deficit from Aave Strategy to fulfill payout instantly.
+              </span>
+            </div>
+          )}
 
           {claimSuccess && (
             <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center justify-between gap-2">
