@@ -1,0 +1,27 @@
+require("@nomicfoundation/hardhat-toolbox");
+
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
+  solidity: {
+    version: "0.8.24",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
+  networks: {
+    hardhat: {
+      chainId: 31337,
+      forking: {
+        url: process.env.TENDERLY_VIRTUAL_TESTNET_URL || "https://rpc.tenderly.co/fork/default",
+        enabled: false,
+      },
+    },
+    tenderly: {
+      url: process.env.TENDERLY_VIRTUAL_TESTNET_URL || "https://virtual.mainnet.rpc.tenderly.co/demo",
+      chainId: 1,
+    },
+  },
+};
