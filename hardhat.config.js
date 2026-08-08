@@ -21,8 +21,8 @@ module.exports = {
       chainId: 8000,
     },
     tenderly: {
-      url: process.env.TENDERLY_VIRTUAL_TESTNET_URL || "https://virtual.mainnet.rpc.tenderly.co/demo",
-      chainId: 1,
+      url: process.env.TENDERLY_VIRTUAL_TESTNET_URL || "https://virtual.mainnet.eu.rpc.tenderly.co/petnica2026/project/3fe3c6-adac14",
+      chainId: 9991,
     },
   },
 };
