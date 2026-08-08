@@ -199,6 +199,9 @@ contract FHEYieldPayrollVault {
             yieldStrategy.withdraw(deficit);
         }
 
+        // Verify total vault liquidity after strategy withdrawal
+        require(token.balanceOf(address(this)) >= amount, "Vault total liquidity temporarily constrained");
+
         // Safe transfer payout to employee
         token.safeTransfer(msg.sender, amount);
 
