@@ -11,6 +11,7 @@ coverage/
 coverage.json
 
 # Next.js & Frontend Builds
+.next/
 frontend/.next/
 frontend/out/
 frontend/build/

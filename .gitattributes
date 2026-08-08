@@ -1,0 +1,5 @@
+# Configure GitHub Linguist language detection
+package-lock.json linguist-vendored
+frontend/package-lock.json linguist-vendored
+*.json linguist-vendored
+*.mjs linguist-vendored
