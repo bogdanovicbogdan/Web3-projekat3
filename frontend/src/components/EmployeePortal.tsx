@@ -27,9 +27,11 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
   onClaimSalary,
   liquidBuffer,
 }) => {
+  const totalAvailable = employeeSalary + employeeYieldShare;
+
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
-  const [claimAmount, setClaimAmount] = useState<number>(employeeSalary);
+  const [claimAmount, setClaimAmount] = useState<number>(totalAvailable);
   const [claimSuccess, setClaimSuccess] = useState<string>("");
 
   const handleReveal = () => {
@@ -42,15 +44,17 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
     setTimeout(() => {
       setIsDecrypting(false);
       setIsRevealed(true);
+      setClaimAmount(employeeSalary + employeeYieldShare);
     }, 1000);
   };
 
   const handleClaim = (e: React.FormEvent) => {
     e.preventDefault();
-    if (claimAmount <= 0 || claimAmount > employeeSalary) return;
+    const maxBalance = employeeSalary + employeeYieldShare;
+    if (claimAmount <= 0 || claimAmount > maxBalance) return;
 
     onClaimSalary(claimAmount);
-    setClaimSuccess(`✅ Successfully claimed $${claimAmount.toLocaleString()} USDC to your wallet!`);
+    setClaimSuccess(`✅ Successfully claimed $${claimAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC (Principal + Yield Bonus) to your wallet!`);
     setTimeout(() => setClaimSuccess(""), 5000);
   };
 
@@ -63,9 +67,9 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
             <Wallet className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Employee Salary Portal</h2>
+            <h2 className="text-xl font-bold text-white">Employee Salary & Yield Portal</h2>
             <p className="text-xs text-slate-400">
-              Your salary is encrypted on-chain via Zama FHE (<code className="text-emerald-400 font-mono">euint64</code>). Only you can decrypt it.
+              Your salary & accrued yield are encrypted on-chain via Zama FHE (<code className="text-emerald-400 font-mono">euint64</code>). Only you can decrypt & claim them.
             </p>
           </div>
         </div>
@@ -80,7 +84,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
             <Lock className="w-4 h-4 text-emerald-400" />
-            ON-CHAIN ENCRYPTED SALARY BALANCE
+            ON-CHAIN ENCRYPTED TOTAL CLAIMABLE BALANCE
           </div>
           <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300 font-mono">
             Zama fhEVM Handles
@@ -96,14 +100,14 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
           ) : isRevealed ? (
             <div className="space-y-2">
               <div className="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight flex items-baseline gap-2">
-                ${(employeeSalary + employeeYieldShare).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                ${totalAvailable.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 <span className="text-lg font-semibold text-emerald-400">USDC</span>
               </div>
               <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
-                <span>Base Salary: <strong className="text-slate-200">${employeeSalary.toLocaleString()} USDC</strong></span>
+                <span>Base Salary: <strong className="text-slate-200">${employeeSalary.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC</strong></span>
                 <span>•</span>
                 <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" /> +${employeeYieldShare.toFixed(2)} USDC Employee Yield Bonus
+                  <Sparkles className="w-3.5 h-3.5" /> +${employeeYieldShare.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC Employee Yield Bonus
                 </span>
               </div>
             </div>
@@ -126,7 +130,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
               </>
             ) : (
               <>
-                <Eye className="w-4 h-4 text-emerald-400" /> 🔓 Decrypt & Reveal Salary (EIP-712)
+                <Eye className="w-4 h-4 text-emerald-400" /> 🔓 Decrypt & Reveal Salary & Yield (EIP-712)
               </>
             )}
           </button>
@@ -143,10 +147,10 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <ArrowDownRight className="w-5 h-5 text-emerald-400" />
-            Instant Salary Withdrawal
+            Instant Salary & Yield Withdrawal
           </h3>
           <p className="text-xs text-slate-400">
-            Withdraw your salary at any second. Funds are instantly disbursed from the Vault Liquid Buffer (${liquidBuffer.toLocaleString()} USDC buffer available).
+            Withdraw your salary and 50% accrued investment yield at any second. Funds are instantly disbursed from the Vault Liquid Buffer (${liquidBuffer.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC buffer available).
           </p>
         </div>
 
@@ -156,17 +160,17 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
               <span>Withdrawal Amount (USDC):</span>
               <button
                 type="button"
-                onClick={() => setClaimAmount(employeeSalary)}
+                onClick={() => setClaimAmount(employeeSalary + employeeYieldShare)}
                 className="text-emerald-400 hover:underline font-semibold"
               >
-                Max (${employeeSalary.toLocaleString()} USDC)
+                Max (${(employeeSalary + employeeYieldShare).toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC)
               </button>
             </div>
             <input
               type="number"
               value={claimAmount}
               onChange={(e) => setClaimAmount(Number(e.target.value))}
-              max={employeeSalary}
+              max={employeeSalary + employeeYieldShare}
               className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-800 text-white font-mono text-base font-bold focus:outline-none focus:border-emerald-500"
               required
             />
@@ -191,11 +195,11 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
 
           <button
             type="submit"
-            disabled={employeeSalary <= 0}
+            disabled={employeeSalary + employeeYieldShare <= 0}
             className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-40"
           >
             <ArrowDownRight className="w-5 h-5" />
-            Instant Claim ${claimAmount.toLocaleString()} USDC
+            Instant Claim ${claimAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC
           </button>
         </form>
       </div>

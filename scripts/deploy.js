@@ -46,7 +46,7 @@ async function main() {
     hre.ethers.keccak256(hre.ethers.toUtf8Bytes("FHE_HANDLE_EMP_3_15000"))
   ];
 
-  await vault.depositPayrollBatch(recipients, amounts, fheHandles);
+  await vault.depositPayrollBatch(recipients, fheHandles, amounts);
   console.log("✅ Batch Payroll Deposited! 85% routed to Aave Yield Strategy, 15% kept in Liquid Buffer.");
 
   const stats = await vault.getVaultStats();

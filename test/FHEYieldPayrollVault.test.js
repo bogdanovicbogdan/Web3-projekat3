@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("FHEYieldPayrollVault (Zama fhEVM Compliant)", function () {
+describe("FHEYieldPayrollVault (Official Zama @fhevm/solidity)", function () {
   let usdc, mockStrategy, vault;
   let employer, emp1, emp2, emp3;
 
@@ -30,15 +30,15 @@ describe("FHEYieldPayrollVault (Zama fhEVM Compliant)", function () {
     await usdc.approve(await vault.getAddress(), INITIAL_MINT);
   });
 
-  it("Should deposit batch payroll and auto-route 85% to Strategy & 15% to Buffer", async function () {
+  it("Should deposit batch payroll with Zama FHE handles and auto-route 85% Strategy / 15% Buffer", async function () {
     const recipients = [emp1.address, emp2.address];
-    const amounts = [ethers.parseUnits("20000", 6), ethers.parseUnits("30000", 6)];
-    const fheHandles = [
-      ethers.keccak256(ethers.toUtf8Bytes("FHE_EMP1_20000")),
-      ethers.keccak256(ethers.toUtf8Bytes("FHE_EMP2_30000"))
+    const rawAmounts = [ethers.parseUnits("20000", 6), ethers.parseUnits("30000", 6)];
+    const encryptedHandles = [
+      ethers.keccak256(ethers.toUtf8Bytes("ZAMA_ENCRYPTED_INPUT_EMP1")),
+      ethers.keccak256(ethers.toUtf8Bytes("ZAMA_ENCRYPTED_INPUT_EMP2"))
     ];
 
-    await vault.depositPayrollBatch(recipients, amounts, fheHandles);
+    await vault.depositPayrollBatch(recipients, encryptedHandles, rawAmounts);
 
     const stats = await vault.getVaultStats();
     expect(stats[0]).to.equal(PAYROLL_BATCH_TOTAL); // Total Principal: 50,000 USDC
@@ -46,15 +46,15 @@ describe("FHEYieldPayrollVault (Zama fhEVM Compliant)", function () {
     expect(stats[2]).to.equal(ethers.parseUnits("42500", 6)); // Strategy Assets 85%: 42,500 USDC
   });
 
-  it("Should harvest yield and credit 50% yield bonus directly to employees", async function () {
+  it("Should harvest yield and credit 50% yield bonus directly to employee encrypted balances", async function () {
     const recipients = [emp1.address, emp2.address];
-    const amounts = [ethers.parseUnits("20000", 6), ethers.parseUnits("30000", 6)];
-    const fheHandles = [
-      ethers.keccak256(ethers.toUtf8Bytes("FHE_EMP1")),
-      ethers.keccak256(ethers.toUtf8Bytes("FHE_EMP2"))
+    const rawAmounts = [ethers.parseUnits("20000", 6), ethers.parseUnits("30000", 6)];
+    const encryptedHandles = [
+      ethers.keccak256(ethers.toUtf8Bytes("ZAMA_ENCRYPTED_INPUT_EMP1")),
+      ethers.keccak256(ethers.toUtf8Bytes("ZAMA_ENCRYPTED_INPUT_EMP2"))
     ];
 
-    await vault.depositPayrollBatch(recipients, amounts, fheHandles);
+    await vault.depositPayrollBatch(recipients, encryptedHandles, rawAmounts);
 
     // Fast forward 30 days to generate yield
     await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]);
@@ -71,10 +71,10 @@ describe("FHEYieldPayrollVault (Zama fhEVM Compliant)", function () {
 
   it("Should allow employee to claim principal AND accrued yield bonus instantly", async function () {
     const recipients = [emp1.address];
-    const amounts = [ethers.parseUnits("15000", 6)];
-    const fheHandles = [ethers.keccak256(ethers.toUtf8Bytes("FHE_EMP1"))];
+    const rawAmounts = [ethers.parseUnits("15000", 6)];
+    const encryptedHandles = [ethers.keccak256(ethers.toUtf8Bytes("ZAMA_ENCRYPTED_INPUT_EMP1"))];
 
-    await vault.depositPayrollBatch(recipients, amounts, fheHandles);
+    await vault.depositPayrollBatch(recipients, encryptedHandles, rawAmounts);
 
     // Fast forward time for yield
     await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]);

@@ -80,9 +80,24 @@ export default function Home() {
     setEmployeeSalary((prev) => prev + amount);
   };
 
-  // Salary Claim Handler
+  // Salary & Yield Bonus Claim Handler
   const handleClaimSalary = (amount: number) => {
-    setEmployeeSalary((prev) => Math.max(0, prev - amount));
+    let remainingToDeduct = amount;
+
+    if (employeeYieldShare > 0) {
+      if (employeeYieldShare >= remainingToDeduct) {
+        setEmployeeYieldShare((prev) => prev - remainingToDeduct);
+        remainingToDeduct = 0;
+      } else {
+        remainingToDeduct -= employeeYieldShare;
+        setEmployeeYieldShare(0);
+      }
+    }
+
+    if (remainingToDeduct > 0) {
+      setEmployeeSalary((prev) => Math.max(0, prev - remainingToDeduct));
+    }
+
     setVaultStats((prev) => ({
       ...prev,
       totalPrincipal: Math.max(0, prev.totalPrincipal - amount),
