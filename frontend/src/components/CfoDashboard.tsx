@@ -56,6 +56,8 @@ interface CfoDashboardProps {
   onYieldSplitChange: (companyShare: number) => void;
   onDepositBatchPayroll: (recipients: string[], amounts: number[]) => void;
   isWarping: boolean;
+  txLogs: TxLog[];
+  setTxLogs: React.Dispatch<React.SetStateAction<TxLog[]>>;
 }
 
 export const CfoDashboard: React.FC<CfoDashboardProps> = ({
@@ -65,6 +67,8 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
   onYieldSplitChange,
   onDepositBatchPayroll,
   isWarping,
+  txLogs,
+  setTxLogs,
 }) => {
   // Calculator state
   const [calcMonthlyPayroll, setCalcMonthlyPayroll] = useState<number>(500000);
@@ -94,28 +98,6 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
 
   const [isEncrypting, setIsEncrypting] = useState<boolean>(false);
   const [encryptedStatus, setEncryptedStatus] = useState<string>("");
-
-  // Live On-Chain Transaction Feed State
-  const [txLogs, setTxLogs] = useState<TxLog[]>([
-    {
-      id: "seed-1",
-      hash: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-      method: "depositPayrollBatch",
-      blockNumber: 104,
-      timestamp: "Initial Setup",
-      status: "Success",
-      details: "Seeded initial batch payroll for 19 staff ($465,000.00 USDC)",
-    },
-    {
-      id: "seed-2",
-      hash: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-      method: "harvestYield",
-      blockNumber: 103,
-      timestamp: "Initial Setup",
-      status: "Success",
-      details: "Auto-routed 85% to Aave Strategy ($395,250 USDC) & 15% to Buffer ($69,750 USDC)",
-    },
-  ]);
 
   const [expandedFheLogId, setExpandedFheLogId] = useState<string | null>(null);
 

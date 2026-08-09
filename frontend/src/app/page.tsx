@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { formatUnits, parseUnits, keccak256, toUtf8Bytes, JsonRpcProvider, Wallet, Contract } from "ethers";
 import { Navbar } from "@/components/Navbar";
-import { CfoDashboard } from "@/components/CfoDashboard";
+import { CfoDashboard, TxLog } from "@/components/CfoDashboard";
 import { EmployeePortal } from "@/components/EmployeePortal";
 import { useWallet } from "@/lib/useWallet";
 import { CONTRACT_ADDRESSES, NETWORK, VAULT_ABI, USDC_ABI } from "@/lib/contracts";
@@ -53,6 +53,28 @@ export default function Home() {
     const [employeeYieldShare, setEmployeeYieldShare] = useState<number>(0);
     const [encryptedPrincipalHandle, setEncryptedPrincipalHandle] = useState<string>("0xa9f8c3e12b74051a8d023f5901198c63a789123b09f42a17b");
     const [encryptedYieldHandle, setEncryptedYieldHandle] = useState<string>("0x3c7104b2a809f176b553920194883ab109f2187a55c911d");
+
+    // Global persistent TxLogs across tab switches
+    const [txLogs, setTxLogs] = useState<TxLog[]>([
+        {
+            id: "seed-1",
+            hash: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            method: "depositPayrollBatch",
+            blockNumber: 104,
+            timestamp: "Initial Setup",
+            status: "Success",
+            details: "Seeded initial batch payroll for 19 staff ($465,000.00 USDC)",
+        },
+        {
+            id: "seed-2",
+            hash: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+            method: "harvestYield",
+            blockNumber: 103,
+            timestamp: "Initial Setup",
+            status: "Success",
+            details: "Auto-routed 85% to Aave Strategy ($395,250 USDC) & 15% to Buffer ($69,750 USDC)",
+        },
+    ]);
 
     // Čitanje stanja sa ugovora ako je čvor dostupan
     const refreshData = useCallback(async () => {
@@ -206,7 +228,7 @@ export default function Home() {
         }
     };
 
-    // Instant claim uplate i prinosa
+    // Instant claim uplate i prinosa sa zapisivanjem u istoriju transakcija
     const handleClaimSalary = async (amount: number) => {
         let remainingToDeduct = amount;
 
@@ -246,6 +268,19 @@ export default function Home() {
             };
         });
 
+        // Record claimSalary transaction log persistently
+        const newTxHash = `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+        const claimLog: TxLog = {
+            id: Date.now().toString(),
+            hash: newTxHash,
+            method: "claimSalary",
+            blockNumber: 107 + txLogs.length,
+            timestamp: new Date().toLocaleTimeString(),
+            status: "Success",
+            details: `Employee claimed $${amount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC salary payout`,
+        };
+        setTxLogs((prev) => [claimLog, ...prev]);
+
         const vault = getVaultContractDirect();
         if (vault) {
             try {
@@ -283,6 +318,8 @@ export default function Home() {
                         onYieldSplitChange={handleYieldSplitChange}
                         onDepositBatchPayroll={handleDepositBatchPayroll}
                         isWarping={isWarping}
+                        txLogs={txLogs}
+                        setTxLogs={setTxLogs}
                     />
                 ) : (
                     <EmployeePortal
