@@ -1,173 +1,207 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { formatUnits, parseUnits, keccak256, toUtf8Bytes, JsonRpcProvider } from "ethers";
 import { Navbar } from "@/components/Navbar";
 import { CfoDashboard } from "@/components/CfoDashboard";
 import { EmployeePortal } from "@/components/EmployeePortal";
-import { Shield, Sparkles, TrendingUp } from "lucide-react";
+import { useWallet } from "@/lib/useWallet";
+import { CONTRACT_ADDRESSES, NETWORK } from "@/lib/contracts";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"cfo" | "employee">("cfo");
-  const [isWarping, setIsWarping] = useState<boolean>(false);
+    const [activeTab, setActiveTab] = useState<"cfo" | "employee">("cfo");
+    const [isWarping, setIsWarping] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [txError, setTxError] = useState<string>("");
 
-  // Core Vault State (Connected to Tenderly Virtual Testnet / Hardhat contracts)
-  const [vaultStats, setVaultStats] = useState({
-    totalPrincipal: 50000,
-    liquidBuffer: 7500, // 15%
-    strategyAssets: 42500, // 85%
-    totalYield: 0,
-    apyBps: 750, // 7.50% APY
-    strategyName: "Aave v3 Core USDC Pool",
-    companyShareBps: 5000, // 50% company / 50% employee
-  });
+    const { address, provider, error, isConnecting, connect, getVaultContract, getUsdcContract } = useWallet();
 
-  // Employee State
-  const [employeeSalary, setEmployeeSalary] = useState<number>(15000);
-  const [employeeYieldShare, setEmployeeYieldShare] = useState<number>(0);
-
-  // Tenderly Time-Warp Handler
-  const handleTimeWarp = (days: number) => {
-    setIsWarping(true);
-
-    setTimeout(() => {
-      // Yield = principal * APY * (days / 365)
-      const newYield = vaultStats.totalPrincipal * (vaultStats.apyBps / 10000) * (days / 365);
-      const companyYield = newYield * (vaultStats.companyShareBps / 10000);
-      const empYield = newYield * (1 - vaultStats.companyShareBps / 10000);
-
-      setVaultStats((prev) => ({
-        ...prev,
-        totalYield: prev.totalYield + newYield,
-        strategyAssets: prev.strategyAssets + newYield,
-      }));
-
-      // Update employee yield share (assuming 30% of total payroll)
-      setEmployeeYieldShare((prev) => prev + empYield * 0.3);
-      setIsWarping(false);
-    }, 1200);
-  };
-
-  // Strategy Switcher Handler
-  const handleStrategyChange = (name: string, apyBps: number) => {
-    setVaultStats((prev) => ({
-      ...prev,
-      strategyName: name,
-      apyBps: apyBps,
-    }));
-  };
-
-  // Yield Split Handler
-  const handleYieldSplitChange = (companyShareBps: number) => {
-    setVaultStats((prev) => ({
-      ...prev,
-      companyShareBps: companyShareBps,
-    }));
-  };
-
-  // Payroll Deposit Handler
-  const handleDepositPayroll = (recipient: string, amount: number) => {
-    const newPrincipal = vaultStats.totalPrincipal + amount;
-    const newBuffer = newPrincipal * 0.15;
-    const newStrategyAssets = newPrincipal * 0.85;
-
-    setVaultStats((prev) => ({
-      ...prev,
-      totalPrincipal: newPrincipal,
-      liquidBuffer: newBuffer,
-      strategyAssets: newStrategyAssets,
-    }));
-
-    setEmployeeSalary((prev) => prev + amount);
-  };
-
-  // Salary & Yield Bonus Claim Handler (With Automated Strategy Deficit Withdrawal)
-  const handleClaimSalary = (amount: number) => {
-    let remainingToDeduct = amount;
-
-    if (employeeYieldShare > 0) {
-      if (employeeYieldShare >= remainingToDeduct) {
-        setEmployeeYieldShare((prev) => prev - remainingToDeduct);
-        remainingToDeduct = 0;
-      } else {
-        remainingToDeduct -= employeeYieldShare;
-        setEmployeeYieldShare(0);
-      }
-    }
-
-    if (remainingToDeduct > 0) {
-      setEmployeeSalary((prev) => Math.max(0, prev - remainingToDeduct));
-    }
-
-    setVaultStats((prev) => {
-      let currentLiquid = prev.liquidBuffer;
-      let currentStrategy = prev.strategyAssets;
-      let newLiquid = currentLiquid;
-      let newStrategy = currentStrategy;
-
-      if (currentLiquid >= amount) {
-        newLiquid = currentLiquid - amount;
-      } else {
-        const deficit = amount - currentLiquid;
-        newLiquid = 0;
-        newStrategy = Math.max(0, currentStrategy - deficit);
-      }
-
-      return {
-        ...prev,
-        totalPrincipal: Math.max(0, prev.totalPrincipal - amount),
-        liquidBuffer: newLiquid,
-        strategyAssets: newStrategy,
-      };
+    // Stvarno stanje ugovora - popunjava se citanjem sa blockchain-a, ne rucno
+    const [vaultStats, setVaultStats] = useState({
+        totalPrincipal: 0,
+        liquidBuffer: 0,
+        strategyAssets: 0,
+        totalYield: 0,
+        apyBps: 0,
+        strategyName: "",
+        companyShareBps: 5000,
     });
-  };
 
-  return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Background Decorative Ambient Glows */}
-      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none animate-pulse-glow"></div>
-      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none animate-pulse-glow"></div>
+    const [employeeSalary, setEmployeeSalary] = useState<number>(0);
+    const [employeeYieldShare, setEmployeeYieldShare] = useState<number>(0);
 
-      {/* Top Navbar */}
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+    // Cita trenutno stanje sa ugovora - poziva se posle konekcije i posle svake transakcije
+    const refreshData = useCallback(async () => {
+        const vault = getVaultContract();
+        if (!vault || !address) return;
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-8 relative z-10">
-        {/* Dynamic Tab Content */}
-        {activeTab === "cfo" ? (
-          <CfoDashboard
-            vaultStats={vaultStats}
-            onTimeWarp={handleTimeWarp}
-            onStrategyChange={handleStrategyChange}
-            onYieldSplitChange={handleYieldSplitChange}
-            onDepositPayroll={handleDepositPayroll}
-            isWarping={isWarping}
-          />
-        ) : (
-          <EmployeePortal
-            employeeSalary={employeeSalary}
-            employeeYieldShare={employeeYieldShare}
-            onClaimSalary={handleClaimSalary}
-            liquidBuffer={vaultStats.liquidBuffer}
-          />
-        )}
-      </main>
+        setIsLoading(true);
+        try {
+            const stats = await vault.getVaultStats();
+            const companyShareBps = await vault.companyYieldShareBps();
 
-      {/* Footer */}
-      <footer className="glass-panel border-t border-slate-800/80 py-6 px-4 mt-auto text-center text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-emerald-400" />
-            <span>YieldRoll FHE • Hackathon Presentation Build</span>
-          </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span className="flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-indigo-400" /> ERC-4626 Vault</span>
-            <span>•</span>
-            <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-purple-400" /> Zama fhEVM</span>
-            <span>•</span>
-            <span>Tenderly Virtual Testnet</span>
-          </div>
+            setVaultStats({
+                totalPrincipal: Number(formatUnits(stats[0], 6)),
+                liquidBuffer: Number(formatUnits(stats[1], 6)),
+                strategyAssets: Number(formatUnits(stats[2], 6)),
+                totalYield: Number(formatUnits(stats[3], 6)),
+                apyBps: Number(stats[4]),
+                strategyName: stats[5],
+                companyShareBps: Number(companyShareBps),
+            });
+
+            const empBal = await vault.getEmployeeEncryptedBalance(address);
+            setEmployeeSalary(Number(formatUnits(empBal[2], 6)));
+            setEmployeeYieldShare(Number(formatUnits(empBal[3], 6)));
+        } catch (e: any) {
+            console.error("Greska pri citanju sa ugovora:", e);
+            setTxError(e?.message || "Nije moguce ucitati podatke sa ugovora");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [getVaultContract, address]);
+
+    useEffect(() => {
+        if (address) refreshData();
+    }, [address, refreshData]);
+
+    // Vreme se pomera direktno na Hardhat cvoru - MetaMask ne prosledjuje admin RPC komande,
+    // pa se za ovaj jedan poziv koristi direktna konekcija na cvor (bez MetaMask posrednika)
+    const handleTimeWarp = async (days: number) => {
+        setIsWarping(true);
+        setTxError("");
+        try {
+            const nodeProvider = new JsonRpcProvider(NETWORK.rpcUrl);
+            await nodeProvider.send("evm_increaseTime", [days * 24 * 60 * 60]);
+            await nodeProvider.send("evm_mine", []);
+
+            const vault = getVaultContract();
+            if (vault) {
+                const tx = await vault.harvestYield();
+                await tx.wait();
+            }
+            await refreshData();
+        } catch (e: any) {
+            setTxError(e?.message || "Time-warp nije uspeo");
+        } finally {
+            setIsWarping(false);
+        }
+    };
+
+    // Strategy switcher - ostaje simuliran, jer ugovor trenutno ima samo jednu deployed strategiju
+    const handleStrategyChange = (name: string, apyBps: number) => {
+        setVaultStats((prev) => ({ ...prev, strategyName: name, apyBps }));
+    };
+
+    const handleYieldSplitChange = async (companyShareBps: number) => {
+        const vault = getVaultContract();
+        if (!vault) return;
+        try {
+            const tx = await vault.setYieldSplit(companyShareBps);
+            await tx.wait();
+            await refreshData();
+        } catch (e: any) {
+            setTxError(e?.message || "Izmena raspodele prinosa nije uspela");
+        }
+    };
+
+    // Stvarni deposit: approve USDC, pa depositPayrollBatch na ugovoru
+    const handleDepositPayroll = async (recipient: string, amount: number) => {
+        const vault = getVaultContract();
+        const usdc = getUsdcContract();
+        if (!vault || !usdc) return;
+        setTxError("");
+        try {
+            const amountUnits = parseUnits(amount.toString(), 6);
+
+            const approveTx = await usdc.approve(CONTRACT_ADDRESSES.vault, amountUnits);
+            await approveTx.wait();
+
+            // Placeholder FHE handle - stvarna enkripcija dolazi u sledecoj fazi (Zama SDK)
+            const fakeHandle = keccak256(toUtf8Bytes(`${recipient}-${amount}-${Date.now()}`));
+
+            const depositTx = await vault.depositPayrollBatch([recipient], [fakeHandle], [amountUnits]);
+            await depositTx.wait();
+
+            await refreshData();
+        } catch (e: any) {
+            setTxError(e?.message || "Deposit nije uspeo");
+        }
+    };
+
+    // Stvarni claim - poziva ugovor sa nalogom trenutno povezanim u MetaMask-u
+    const handleClaimSalary = async (amount: number) => {
+        const vault = getVaultContract();
+        if (!vault) return;
+        setTxError("");
+        try {
+            const amountUnits = parseUnits(amount.toString(), 6);
+            const tx = await vault.claimSalary(amountUnits);
+            await tx.wait();
+            await refreshData();
+        } catch (e: any) {
+            setTxError(e?.message || "Claim nije uspeo");
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+            <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none animate-pulse-glow"></div>
+            <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none animate-pulse-glow"></div>
+
+            <Navbar
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                address={address}
+                isConnecting={isConnecting}
+                onConnect={connect}
+            />
+
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-8 relative z-10">
+                {!address && (
+                    <div className="glass-panel p-6 rounded-2xl border border-indigo-500/30 text-center mb-6">
+                        <p className="text-slate-300 text-sm">
+                            Poveži MetaMask (na lokalnu Hardhat mrežu, chain ID 31337) da vidiš stvarno stanje ugovora.
+                        </p>
+                    </div>
+                )}
+
+                {(error || txError) && (
+                    <div className="glass-panel p-4 rounded-xl border border-red-500/30 text-red-300 text-xs mb-6">
+                        {error || txError}
+                    </div>
+                )}
+
+                {isLoading && (
+                    <div className="text-center text-slate-400 text-xs mb-4">Učitavanje stanja sa ugovora...</div>
+                )}
+
+                {activeTab === "cfo" ? (
+                    <CfoDashboard
+                        vaultStats={vaultStats}
+                        onTimeWarp={handleTimeWarp}
+                        onStrategyChange={handleStrategyChange}
+                        onYieldSplitChange={handleYieldSplitChange}
+                        onDepositPayroll={handleDepositPayroll}
+                        isWarping={isWarping}
+                    />
+                ) : (
+                    <EmployeePortal
+                        employeeSalary={employeeSalary}
+                        employeeYieldShare={employeeYieldShare}
+                        onClaimSalary={handleClaimSalary}
+                        liquidBuffer={vaultStats.liquidBuffer}
+                    />
+                )}
+            </main>
+
+            <footer className="glass-panel border-t border-slate-800/80 py-6 px-4 mt-auto text-center text-xs text-slate-400">
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <span>YieldRoll FHE • Povezano na lokalnu Hardhat mrežu</span>
+                    </div>
+                </div>
+            </footer>
         </div>
-      </footer>
-    </div>
-  );
+    );
 }

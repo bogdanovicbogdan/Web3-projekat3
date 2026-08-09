@@ -6,9 +6,13 @@ import { ShieldCheck, Cpu, Wallet, Layers, Sparkles } from "lucide-react";
 interface NavbarProps {
   activeTab: "cfo" | "employee";
   setActiveTab: (tab: "cfo" | "employee") => void;
+  address: string | null;
+  isConnecting: boolean;
+  onConnect: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, address, isConnecting, onConnect }) => {
+  const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null;
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3.5">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
@@ -64,10 +68,21 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             Tenderly Virtual Testnet (Chain 9991 - petnica2026)
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs font-medium text-slate-300">
-            <Wallet className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="font-mono text-slate-200">0x7099...79C8</span>
-          </div>
+          {shortAddress ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs font-medium text-slate-300">
+              <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="font-mono text-slate-200">{shortAddress}</span>
+            </div>
+          ) : (
+            <button
+              onClick={onConnect}
+              disabled={isConnecting}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/60 text-xs font-semibold text-white transition-all disabled:opacity-50"
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              {isConnecting ? "Povezujem..." : "Poveži MetaMask"}
+            </button>
+          )}
         </div>
       </div>
     </header>
