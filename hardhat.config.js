@@ -15,6 +15,8 @@ module.exports = {
   networks: {
     hardhat: {
       chainId: 31337,
+      initialBaseFeePerGas: 0,
+      gasPrice: 0,
     },
     zamaDevnet: {
       url: "https://devnet.zama.ai",

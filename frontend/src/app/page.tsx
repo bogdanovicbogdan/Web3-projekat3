@@ -97,7 +97,7 @@ export default function Home() {
         const vault = getVaultContract();
         if (!vault) return;
         try {
-            const tx = await vault.setYieldSplit(companyShareBps);
+            const tx = await vault.setYieldSplit(companyShareBps, { gasPrice: 0 });
             await tx.wait();
             await refreshData();
         } catch (e: any) {
@@ -126,13 +126,13 @@ export default function Home() {
         try {
             const totalUnits = parseUnits(totalAmount.toString(), 6);
 
-            const approveTx = await usdc.approve(CONTRACT_ADDRESSES.vault, totalUnits);
+            const approveTx = await usdc.approve(CONTRACT_ADDRESSES.vault, totalUnits, { gasPrice: 0 });
             await approveTx.wait();
 
             const amountUnitsArray = amounts.map((a) => parseUnits(a.toString(), 6));
             const fakeHandles = recipients.map((r, i) => keccak256(toUtf8Bytes(`${r}-${amounts[i]}-${Date.now()}`)));
 
-            const depositTx = await vault.depositPayrollBatch(recipients, fakeHandles, amountUnitsArray);
+            const depositTx = await vault.depositPayrollBatch(recipients, fakeHandles, amountUnitsArray, { gasPrice: 0 });
             await depositTx.wait();
 
             await refreshData();
@@ -148,7 +148,7 @@ export default function Home() {
         setTxError("");
         try {
             const amountUnits = parseUnits(amount.toString(), 6);
-            const tx = await vault.claimSalary(amountUnits);
+            const tx = await vault.claimSalary(amountUnits, { gasPrice: 0 });
             await tx.wait();
             await refreshData();
         } catch (e: any) {
