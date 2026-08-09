@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Setup
 
-## Getting Started
-
-First, run the development server:
+### 1. Local blockchain
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx hardhat node
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Starts a local Ethereum network (chain ID 31337) with 20 test accounts,
+10,000 ETH each.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Deploy contracts (terminal 2)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+```
 
-## Learn More
+Deploys MockUSDC, MockYieldStrategy, and FHEYieldPayrollVault, and pays
+demo payroll to all available test accounts. Re-run after every restart
+of `npx hardhat node`.
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Frontend (terminal 3)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cd frontend
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Runs the app at `http://localhost:3000`, reading and writing real data
+from the deployed contract. Requires terminal 1 to stay running.
 
-## Deploy on Vercel
+[//]: # (## MetaMask integration)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+[//]: # ()
+[//]: # (Wallet connection lives in `frontend/src/lib/useWallet.ts` — handles)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[//]: # (connecting, network switching, and account-change detection. Contract)
+
+[//]: # (addresses and ABI are in `frontend/src/lib/contracts.ts`.)
