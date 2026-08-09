@@ -61,3 +61,14 @@
 .animate-pulse-glow {
   animation: pulse-slow 8s infinite ease-in-out;
 }
+
+/* Hide up/down number spinners for clean manual entry */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
