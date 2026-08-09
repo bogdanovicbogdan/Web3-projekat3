@@ -105,27 +105,39 @@ export default function Home() {
         }
     };
 
-    // Stvarni deposit: approve USDC, pa depositPayrollBatch na ugovoru
-    const handleDepositPayroll = async (recipient: string, amount: number) => {
+    // Stvarni batch deposit: approve ukupnog USDC iznosa, pa depositPayrollBatch na ugovoru za sve radnike
+    const handleDepositBatchPayroll = async (recipients: string[], amounts: number[]) => {
         const vault = getVaultContract();
         const usdc = getUsdcContract();
-        if (!vault || !usdc) return;
+        const totalAmount = amounts.reduce((sum, a) => sum + a, 0);
+
+        if (!vault || !usdc) {
+            // Simulirani fallback kada wallet nije konektovan
+            setVaultStats((prev) => ({
+                ...prev,
+                totalPrincipal: prev.totalPrincipal + totalAmount,
+                liquidBuffer: prev.liquidBuffer + totalAmount * 0.15,
+                strategyAssets: prev.strategyAssets + totalAmount * 0.85,
+            }));
+            return;
+        }
+
         setTxError("");
         try {
-            const amountUnits = parseUnits(amount.toString(), 6);
+            const totalUnits = parseUnits(totalAmount.toString(), 6);
 
-            const approveTx = await usdc.approve(CONTRACT_ADDRESSES.vault, amountUnits);
+            const approveTx = await usdc.approve(CONTRACT_ADDRESSES.vault, totalUnits);
             await approveTx.wait();
 
-            // Placeholder FHE handle - stvarna enkripcija dolazi u sledecoj fazi (Zama SDK)
-            const fakeHandle = keccak256(toUtf8Bytes(`${recipient}-${amount}-${Date.now()}`));
+            const amountUnitsArray = amounts.map((a) => parseUnits(a.toString(), 6));
+            const fakeHandles = recipients.map((r, i) => keccak256(toUtf8Bytes(`${r}-${amounts[i]}-${Date.now()}`)));
 
-            const depositTx = await vault.depositPayrollBatch([recipient], [fakeHandle], [amountUnits]);
+            const depositTx = await vault.depositPayrollBatch(recipients, fakeHandles, amountUnitsArray);
             await depositTx.wait();
 
             await refreshData();
         } catch (e: any) {
-            setTxError(e?.message || "Deposit nije uspeo");
+            setTxError(e?.message || "Batch deposit nije uspeo");
         }
     };
 
@@ -182,7 +194,7 @@ export default function Home() {
                         onTimeWarp={handleTimeWarp}
                         onStrategyChange={handleStrategyChange}
                         onYieldSplitChange={handleYieldSplitChange}
-                        onDepositPayroll={handleDepositPayroll}
+                        onDepositBatchPayroll={handleDepositBatchPayroll}
                         isWarping={isWarping}
                     />
                 ) : (

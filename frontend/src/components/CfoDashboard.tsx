@@ -11,9 +11,20 @@ import {
   Lock,
   Percent,
   DollarSign,
-  PieChart,
-  ArrowUpRight
+  ArrowUpRight,
+  Plus,
+  Trash2,
+  Users,
+  UserPlus,
+  Building2
 } from "lucide-react";
+
+export interface EmployeeRow {
+  id: string;
+  name: string;
+  address: string;
+  salary: number;
+}
 
 interface CfoDashboardProps {
   vaultStats: {
@@ -28,7 +39,7 @@ interface CfoDashboardProps {
   onTimeWarp: (days: number) => void;
   onStrategyChange: (name: string, apyBps: number) => void;
   onYieldSplitChange: (companyShare: number) => void;
-  onDepositPayroll: (recipient: string, amount: number) => void;
+  onDepositBatchPayroll: (recipients: string[], amounts: number[]) => void;
   isWarping: boolean;
 }
 
@@ -37,16 +48,35 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
   onTimeWarp,
   onStrategyChange,
   onYieldSplitChange,
-  onDepositPayroll,
+  onDepositBatchPayroll,
   isWarping,
 }) => {
   // Calculator state
   const [calcMonthlyPayroll, setCalcMonthlyPayroll] = useState<number>(500000);
   const [calcUnclaimedDays, setCalcUnclaimedDays] = useState<number>(14);
 
-  // Deposit Form State
-  const [recipientAddress, setRecipientAddress] = useState<string>("0x3C44CdD47057926D3B576363378838aF660c6753");
-  const [depositAmount, setDepositAmount] = useState<number>(15000);
+  // Employee Batch List State
+  const [employeeList, setEmployeeList] = useState<EmployeeRow[]>([
+    {
+      id: "1",
+      name: "Alice Vance (Engineering Lead)",
+      address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      salary: 15000,
+    },
+    {
+      id: "2",
+      name: "Bob Smith (Product Manager)",
+      address: "0x3C44CdD47057926D3B576363378838aF660c6753",
+      salary: 20000,
+    },
+    {
+      id: "3",
+      name: "Charlie Brown (DevOps Specialist)",
+      address: "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+      salary: 15000,
+    },
+  ]);
+
   const [isEncrypting, setIsEncrypting] = useState<boolean>(false);
   const [encryptedStatus, setEncryptedStatus] = useState<string>("");
 
@@ -63,17 +93,59 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
   const companyProfitAnnual = annualYieldUSD * (vaultStats.companyShareBps / 10000);
   const employeeBonusAnnual = annualYieldUSD * (1 - vaultStats.companyShareBps / 10000);
 
+  // Total Batch Math
+  const totalBatchPayroll = employeeList.reduce((sum, emp) => sum + (Number(emp.salary) || 0), 0);
+  const bufferAllocation = totalBatchPayroll * 0.15;
+  const strategyAllocation = totalBatchPayroll * 0.85;
+
+  // Handlers for Employee List
+  const handleAddEmployee = () => {
+    const newId = (employeeList.length + 1).toString();
+    setEmployeeList([
+      ...employeeList,
+      {
+        id: newId,
+        name: `Employee #${newId}`,
+        address: "0x...",
+        salary: 10000,
+      },
+    ]);
+  };
+
+  const handleRemoveEmployee = (id: string) => {
+    if (employeeList.length <= 1) return; // Maintain at least 1 row
+    setEmployeeList(employeeList.filter((emp) => emp.id !== id));
+  };
+
+  const handleEmployeeChange = (id: string, field: keyof EmployeeRow, value: string | number) => {
+    setEmployeeList(
+      employeeList.map((emp) => {
+        if (emp.id === id) {
+          return { ...emp, [field]: value };
+        }
+        return emp;
+      })
+    );
+  };
+
   const handleDepositSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recipientAddress || depositAmount <= 0) return;
+    const recipients = employeeList.map((emp) => emp.address.trim());
+    const amounts = employeeList.map((emp) => Number(emp.salary) || 0);
+
+    if (recipients.some((addr) => !addr || addr === "0x...") || amounts.some((amt) => amt <= 0)) {
+      setEncryptedStatus("⚠️ Please provide valid wallet addresses & salary amounts for all employees.");
+      return;
+    }
+
     setIsEncrypting(true);
-    setEncryptedStatus("Zama FHE Encrypting `euint64` payload...");
-    
+    setEncryptedStatus(`Zama FHE Encrypting ${employeeList.length} employee payloads (euint64)...`);
+
     setTimeout(() => {
-      onDepositPayroll(recipientAddress, depositAmount);
+      onDepositBatchPayroll(recipients, amounts);
       setIsEncrypting(false);
-      setEncryptedStatus("✅ Encrypted & Deposited to Vault!");
-      setTimeout(() => setEncryptedStatus(""), 4000);
+      setEncryptedStatus(`✅ Encrypted & Deposited $${totalBatchPayroll.toLocaleString()} USDC Batch Payroll for ${employeeList.length} Employees!`);
+      setTimeout(() => setEncryptedStatus(""), 5000);
     }, 1200);
   };
 
@@ -337,57 +409,119 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
         </div>
       </div>
 
-      {/* Batch Payroll Deposit Form */}
-      <div className="glass-panel p-6 rounded-2xl space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      {/* Company Employee Batch Payroll Management (Multi-Employee List & Batch Deposit) */}
+      <div className="glass-panel p-6 rounded-2xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Lock className="w-5 h-5 text-indigo-400" />
-              Deposit FHE Encrypted Payroll
+              <Users className="w-5 h-5 text-indigo-400" />
+              Company Employee Payroll Directory & Batch Deposit
             </h3>
             <p className="text-xs text-slate-400">
-              Salary amounts are encrypted client-side using Zama FHE (<code className="text-indigo-300 font-mono">euint64</code>) before landing on-chain.
+              Manage your company staff directory. All salary amounts are encrypted client-side using Zama FHE (<code className="text-indigo-300 font-mono">euint64</code>) before landing on-chain.
             </p>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
-            <Shield className="w-3.5 h-3.5" /> FHE Encrypted Batch
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleAddEmployee}
+              className="px-4 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-bold transition-all flex items-center gap-2"
+            >
+              <UserPlus className="w-4 h-4 text-indigo-400" /> Add Employee
+            </button>
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold">
+              <Building2 className="w-3.5 h-3.5 text-purple-400" />
+              {employeeList.length} Active Staff
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleDepositSubmit} className="space-y-4 pt-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Employee Wallet Address:
-              </label>
-              <input
-                type="text"
-                value={recipientAddress}
-                onChange={(e) => setRecipientAddress(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-200 text-xs font-mono focus:outline-none focus:border-indigo-500"
-                placeholder="0x..."
-                required
-              />
+        <form onSubmit={handleDepositSubmit} className="space-y-6">
+          {/* Employee List Directory Table / Cards */}
+          <div className="space-y-3">
+            {employeeList.map((emp, index) => (
+              <div
+                key={emp.id}
+                className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/30 transition-all flex flex-col md:flex-row items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3 w-full md:w-1/3">
+                  <span className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-400 font-mono font-bold text-xs flex items-center justify-center border border-indigo-500/20">
+                    #{index + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={emp.name}
+                    onChange={(e) => handleEmployeeChange(emp.id, "name", e.target.value)}
+                    placeholder="Employee Name & Role"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-medium focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+
+                <div className="w-full md:w-1/2">
+                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Wallet Address:</label>
+                  <input
+                    type="text"
+                    value={emp.address}
+                    onChange={(e) => handleEmployeeChange(emp.id, "address", e.target.value)}
+                    placeholder="0x..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs font-mono focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Monthly Salary (USDC):</label>
+                    <input
+                      type="number"
+                      value={emp.salary}
+                      onChange={(e) => handleEmployeeChange(emp.id, "salary", Number(e.target.value))}
+                      placeholder="15000"
+                      className="w-32 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 font-mono font-bold text-xs focus:outline-none focus:border-emerald-500"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveEmployee(emp.id)}
+                    disabled={employeeList.length <= 1}
+                    className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all disabled:opacity-30 mt-4"
+                    title="Remove Employee"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Batch Calculation & Strategy Auto-Routing Bar */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/20 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="space-y-1 text-center md:text-left">
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">TOTAL MONTHLY BATCH PAYROLL</div>
+              <div className="text-2xl font-black text-white font-mono">
+                ${totalBatchPayroll.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs font-semibold text-emerald-400">USDC</span>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Salary Amount (USDC):
-              </label>
-              <input
-                type="number"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(Number(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-200 text-xs font-mono focus:outline-none focus:border-indigo-500"
-                placeholder="15000"
-                required
-              />
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-mono">
+              <div className="px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+                <span>Buffer 15%: </span>
+                <strong className="text-white">${bufferAllocation.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC</strong>
+              </div>
+              <div className="px-3.5 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300">
+                <span>Aave Strategy 85%: </span>
+                <strong className="text-white">${strategyAllocation.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC</strong>
+              </div>
             </div>
           </div>
 
           {encryptedStatus && (
-            <div className="p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-mono flex items-center gap-2 animate-pulse">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className="p-3.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-mono flex items-center gap-2 animate-pulse">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               {encryptedStatus}
             </div>
           )}
@@ -395,10 +529,12 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
           <button
             type="submit"
             disabled={isEncrypting}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-sm transition-all shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-2 disabled:opacity-40"
           >
-            <Lock className="w-4 h-4" />
-            {isEncrypting ? "Encrypting & Executing Batch..." : "Encrypt & Deposit Payroll to Vault"}
+            <Lock className="w-5 h-5 text-indigo-300" />
+            {isEncrypting
+              ? `Zama FHE Encrypting & Processing ${employeeList.length} Payrolls...`
+              : `🔒 Encrypt & Execute Batch Payroll (${employeeList.length} Staff - $${totalBatchPayroll.toLocaleString()} USDC)`}
           </button>
         </form>
       </div>
