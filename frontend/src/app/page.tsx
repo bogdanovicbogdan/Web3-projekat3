@@ -137,11 +137,16 @@ export default function Home() {
         const empSharePercentage = 1 - vaultStats.companyShareBps / 10000;
         const empYieldAccrued = earnedYield * empSharePercentage;
 
-        setVaultStats((prev) => ({
-            ...prev,
-            totalYield: prev.totalYield + earnedYield,
-            strategyAssets: prev.strategyAssets + earnedYield,
-        }));
+        setVaultStats((prev) => {
+            const liquidShare = earnedYield * 0.15;
+            const strategyShare = earnedYield * 0.85;
+            return {
+                ...prev,
+                totalYield: prev.totalYield + earnedYield,
+                liquidBuffer: prev.liquidBuffer + liquidShare,
+                strategyAssets: prev.strategyAssets + strategyShare,
+            };
+        });
 
         setEmployeeYieldShare((prev) => prev + empYieldAccrued * 0.33);
         setIsWarping(false);
