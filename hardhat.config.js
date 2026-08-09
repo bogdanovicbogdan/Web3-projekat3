@@ -18,13 +18,9 @@ module.exports = {
       initialBaseFeePerGas: 0,
       gasPrice: 0,
     },
-    zamaDevnet: {
-      url: "https://devnet.zama.ai",
-      chainId: 8000,
-    },
-    tenderly: {
-      url: process.env.TENDERLY_VIRTUAL_TESTNET_URL || "https://virtual.mainnet.eu.rpc.tenderly.co/petnica2026/project/3fe3c6-adac14",
-      chainId: 9991,
+    localhost: {
+      url: "http://127.0.0.1:8545",
+      chainId: 31337,
     },
   },
 };

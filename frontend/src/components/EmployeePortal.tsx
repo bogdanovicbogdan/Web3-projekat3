@@ -194,19 +194,9 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
           )}
 
           {claimSuccess && (
-            <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                {claimSuccess}
-              </span>
-              <a
-                href="https://virtual.mainnet.rpc.tenderly.co/demo"
-                target="_blank"
-                rel="noreferrer"
-                className="text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
-              >
-                Tenderly Tx <ExternalLink className="w-3 h-3" />
-              </a>
+            <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{claimSuccess}</span>
             </div>
           )}
 

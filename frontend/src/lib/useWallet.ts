@@ -17,16 +17,8 @@ export function useWallet() {
   const [error, setError] = useState<string>("");
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Provera da li je MetaMask vec povezan (ne trazi ponovnu dozvolu ako jeste)
-  useEffect(() => {
-    if (!window.ethereum) return;
-    window.ethereum.request({ method: "eth_accounts" }).then((accounts: string[]) => {
-      if (accounts.length > 0) {
-        connect();
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Konekcija se vrši samo kada korisnik eksplicitno klikne na "Poveži MetaMask"
+  // Na taj način se MetaMask NEĆE otvarati sam od sebe pri svakom kliku!
 
   const switchToLocalNetwork = useCallback(async () => {
     if (!window.ethereum) return;
@@ -64,7 +56,7 @@ export function useWallet() {
     setError("");
     try {
       await switchToLocalNetwork();
-      const browserProvider = new BrowserProvider(window.ethereum);
+      const browserProvider = new BrowserProvider(window.ethereum, { chainId: NETWORK.chainId, name: NETWORK.chainName }, { staticNetwork: true });
       const accounts: string[] = await window.ethereum.request({ method: "eth_requestAccounts" });
       const newSigner = await browserProvider.getSigner();
 
