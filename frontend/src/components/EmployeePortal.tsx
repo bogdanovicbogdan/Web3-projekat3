@@ -14,7 +14,9 @@ import {
   Key,
   Copy,
   Check,
-  Unlock
+  Unlock,
+  DollarSign,
+  TrendingUp
 } from "lucide-react";
 import { authenticateAndDecryptSalary } from "@/lib/fheClient";
 
@@ -37,7 +39,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
 }) => {
   const totalAvailable = employeeSalary + employeeYieldShare;
 
-  // Set default to REVEALED (decrypted) as requested by user
+  // Set default to REVEALED (decrypted)
   const [isRevealed, setIsRevealed] = useState<boolean>(true);
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
   const [claimAmount, setClaimAmount] = useState<number>(totalAvailable);
@@ -103,7 +105,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
               Employee Compensation & Yield Portal
             </h2>
             <p className="text-xs text-slate-400">
-              Your salary balance is encrypted on-chain using Zama FHE (<code className="text-emerald-300 font-mono">euint64</code>). Decrypted automatically for your wallet via EIP-712 authorization.
+              Your salary & yield balance are encrypted on-chain using Zama FHE (<code className="text-emerald-300 font-mono">euint64</code>). Decrypted automatically for your wallet via EIP-712 authorization.
             </p>
           </div>
 
@@ -116,23 +118,60 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
         </div>
       </div>
 
-      {/* Main Balance Display Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Encrypted Principal Salary */}
-        <div className="glass-card p-6 rounded-2xl relative overflow-hidden space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">MONTHLY SALARY PRINCIPAL</span>
-            {isRevealed ? <Unlock className="w-4 h-4 text-emerald-400" /> : <Lock className="w-4 h-4 text-indigo-400" />}
+      {/* Unified Hero Balance Card (Combined Base Salary + DeFi Yield) */}
+      <div className="glass-panel p-8 rounded-3xl relative overflow-hidden border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/60 shadow-2xl space-y-6">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -z-10"></div>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+          <div>
+            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-400" /> TOTAL AVAILABLE BALANCE (SALARY + YIELD)
+            </span>
+            <p className="text-xs text-slate-400 mt-1">
+              Combined claimable base salary and accrued 50% DeFi yield bonus.
+            </p>
           </div>
 
-          <div className="py-2">
+          <div className="flex items-center gap-2">
             {isRevealed ? (
-              <div className="text-3xl font-black text-white font-mono animate-fade-in flex items-baseline gap-2">
-                ${employeeSalary.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs text-slate-400 font-semibold">USDC</span>
-              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold font-mono flex items-center gap-1.5">
+                <Unlock className="w-3.5 h-3.5" /> Decrypted
+              </span>
             ) : (
+              <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold font-mono flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5" /> Zama euint64 Encrypted
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Main Display Number */}
+        <div className="py-2">
+          {isRevealed ? (
+            <div className="space-y-4">
+              <div className="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight animate-fade-in flex items-baseline gap-2">
+                ${totalAvailable.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-sm font-bold text-slate-400">USDC</span>
+              </div>
+
+              {/* Sub-breakdown Pill Bar */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-medium text-slate-300 flex items-center gap-2">
+                  <span className="text-slate-400">Monthly Base Salary:</span>
+                  <span className="font-bold text-white font-mono">${employeeSalary.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC</span>
+                </div>
+
+                <div className="px-3.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-xs font-medium text-emerald-300 flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Aave Yield Bonus (50%):</span>
+                  <span className="font-bold text-emerald-400 font-mono">+${employeeYieldShare.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-indigo-300 font-mono text-xs font-semibold bg-slate-950/90 p-3 rounded-xl border border-indigo-500/20">
+                <span className="text-xs font-bold text-indigo-300 block font-mono">Encrypted Base Salary (euint64):</span>
+                <div className="flex items-center justify-between text-indigo-300 font-mono text-xs font-semibold bg-slate-950/90 p-3.5 rounded-xl border border-indigo-500/20">
                   <div className="flex items-center gap-2 truncate">
                     <Lock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                     <span className="truncate">{encryptedPrincipalHandle}</span>
@@ -140,40 +179,16 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                   <button
                     onClick={() => copyToClipboard(encryptedPrincipalHandle, "principal")}
                     className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white shrink-0 ml-2"
-                    title="Copy Zama euint64 Ciphertext Handle"
+                    title="Copy Zama euint64 Principal Handle"
                   >
                     {copiedHandle === "principal" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono block">On-Chain Zama euint64 Ciphertext Handle</span>
               </div>
-            )}
-          </div>
 
-          <p className="text-xs text-slate-400">
-            Base salary allocated by employer treasury.
-          </p>
-        </div>
-
-        {/* Accrued DeFi Yield Bonus */}
-        <div className="glass-card p-6 rounded-2xl relative overflow-hidden space-y-4 border-emerald-500/20">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4" /> ACCRUED DEFI YIELD BONUS
-            </span>
-            <span className="text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
-              50% Yield Share
-            </span>
-          </div>
-
-          <div className="py-2">
-            {isRevealed ? (
-              <div className="text-3xl font-black text-emerald-300 font-mono animate-fade-in flex items-baseline gap-1">
-                +${employeeYieldShare.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs text-emerald-400 font-semibold">USDC</span>
-              </div>
-            ) : (
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-emerald-300 font-mono text-xs font-semibold bg-slate-950/90 p-3 rounded-xl border border-emerald-500/20">
+                <span className="text-xs font-bold text-emerald-300 block font-mono">Encrypted Yield Bonus (euint64):</span>
+                <div className="flex items-center justify-between text-emerald-300 font-mono text-xs font-semibold bg-slate-950/90 p-3.5 rounded-xl border border-emerald-500/20">
                   <div className="flex items-center gap-2 truncate">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span className="truncate">{encryptedYieldHandle}</span>
@@ -186,14 +201,9 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                     {copiedHandle === "yield" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono block">On-Chain Zama euint64 Yield Bonus Handle</span>
               </div>
-            )}
-          </div>
-
-          <p className="text-xs text-slate-400">
-            Bonus interest earned from idle payroll capital deployed in Aave v3.
-          </p>
+            </div>
+          )}
         </div>
       </div>
 
