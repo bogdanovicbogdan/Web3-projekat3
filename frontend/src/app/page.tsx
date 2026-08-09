@@ -228,7 +228,7 @@ export default function Home() {
         const vault = getVaultContractDirect();
         if (vault) {
             try {
-                const amountUnits = parseUnits(amount.toString(), 6);
+                const amountUnits = parseUnits(Number(amount.toFixed(6)).toString(), 6);
                 const tx = await vault.claimSalary(amountUnits);
                 await tx.wait();
             } catch (e: any) {
@@ -276,7 +276,7 @@ export default function Home() {
             <footer className="glass-panel border-t border-slate-800/80 py-6 px-4 mt-auto text-center text-xs text-slate-400">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                        <span>YieldRoll FHE • Direct Execution & Instant DeFi Yield Engine</span>
+                        <span>Sealary FHE • Direct Execution & Instant DeFi Yield Engine</span>
                     </div>
                 </div>
             </footer>

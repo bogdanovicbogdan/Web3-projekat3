@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "YieldRoll FHE | Confidential & Yield-Generating Crypto Payroll",
+  title: "Sealary FHE | Confidential & Yield-Generating Crypto Payroll",
   description: "FHE Encrypted Payroll Platform with Automated ERC-4626 DeFi Yield Engine for Unclaimed Salaries.",
 };
 

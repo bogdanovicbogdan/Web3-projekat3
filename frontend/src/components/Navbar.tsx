@@ -26,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, address
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xl font-bold tracking-tight text-white">
-                YieldRoll <span className="gradient-text-indigo">FHE</span>
+                Sealary <span className="gradient-text-indigo">FHE</span>
               </span>
               <span className="px-2 py-0.5 text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full flex items-center gap-1">
                 <Cpu className="w-3 h-3" /> Zama fhEVM
