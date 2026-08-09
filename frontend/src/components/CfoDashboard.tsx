@@ -642,27 +642,56 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
                   </div>
 
                   <pre className="text-indigo-200 overflow-x-auto p-3 rounded-lg bg-slate-900/80 border border-slate-800 leading-relaxed font-mono">
-{JSON.stringify({
-  protocol: "Zama fhEVM @fhevm/solidity",
-  contract: "FHEYieldPayrollVault",
-  method: log.method,
-  fheCiphertextInputs: [
-    {
-      employee: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-      zamaType: "externalEuint64",
-      ciphertextHandle: "0xa9f8c3e12b74051a8d023f5901198c63a789123b09f42a17b",
-      zkInputProof: "0x8f2a91c304b7e192f5891a273c509e81726a5901b2a764d..."
-    },
-    {
-      employee: "0x3C44CdD4706067305342968392261710814b8242",
-      zamaType: "externalEuint64",
-      ciphertextHandle: "0x3c7104b2a809f176b553920194883ab109f2187a55c911d",
-      zkInputProof: "0x12b74051a8d023f5901198c63a789123b09f42a17b8f2a9..."
-    }
-  ],
-  aclEnforcement: ["FHE.allowThis(newBal)", "FHE.allow(newBal, employee)"],
-  onChainState: "Encrypted in Zama Coprocessor Storage"
-}, null, 2)}
+{JSON.stringify(
+  log.method === "claimSalary"
+    ? {
+        protocol: "Zama fhEVM @fhevm/solidity",
+        contract: "FHEYieldPayrollVault",
+        method: "claimSalary",
+        fheOperation: "FHE.sub(encryptedPrincipal, claimedAmount)",
+        claimingEmployee: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        zamaType: "euint64",
+        updatedCiphertextHandle: "0xa9f8c3e12b74051a8d023f5901198c63a789123b09f42a17b",
+        aclEnforcement: ["FHE.allowThis(newBal)", "FHE.allow(newBal, employee)"],
+        onChainState: "Encrypted in Zama Coprocessor Storage"
+      }
+    : log.method.includes("harvestYield")
+    ? {
+        protocol: "Zama fhEVM @fhevm/solidity",
+        contract: "FHEYieldPayrollVault",
+        method: "harvestYield",
+        fheOperation: "FHE.add(encryptedYieldBonus, empShare)",
+        homomorphicTarget: "Active Employee Encrypted Yield Balances",
+        zamaType: "euint64",
+        yieldBonusHandle: "0x3c7104b2a809f176b553920194883ab109f2187a55c911d",
+        aclEnforcement: ["FHE.allowThis(newBal)", "FHE.allow(newBal, employee)"],
+        onChainState: "Encrypted in Zama Coprocessor Storage"
+      }
+    : {
+        protocol: "Zama fhEVM @fhevm/solidity",
+        contract: "FHEYieldPayrollVault",
+        method: "depositPayrollBatch",
+        fheOperation: "FHE.fromExternal(externalEuint64) + FHE.add(currentBal, newBal)",
+        fheCiphertextInputs: [
+          {
+            employee: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            zamaType: "externalEuint64",
+            ciphertextHandle: "0xa9f8c3e12b74051a8d023f5901198c63a789123b09f42a17b",
+            zkInputProof: "0x8f2a91c304b7e192f5891a273c509e81726a5901b2a764d..."
+          },
+          {
+            employee: "0x3C44CdD4706067305342968392261710814b8242",
+            zamaType: "externalEuint64",
+            ciphertextHandle: "0x3c7104b2a809f176b553920194883ab109f2187a55c911d",
+            zkInputProof: "0x12b74051a8d023f5901198c63a789123b09f42a17b8f2a9..."
+          }
+        ],
+        aclEnforcement: ["FHE.allowThis(newBal)", "FHE.allow(newBal, employee)"],
+        onChainState: "Encrypted in Zama Coprocessor Storage"
+      },
+  null,
+  2
+)}
                   </pre>
                 </div>
               )}
