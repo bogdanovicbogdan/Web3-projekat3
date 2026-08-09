@@ -1,5 +1,5 @@
 {
-  "name": "yieldroll-fhe",
+  "name": "sealary-fhe",
   "version": "1.0.0",
   "description": "FHE Confidential & Yield-Generating Payroll Platform for Hackathon Demo",
   "main": "hardhat.config.js",

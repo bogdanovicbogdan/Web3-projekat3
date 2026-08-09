@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 
 async function main() {
-    console.log("🚀 Starting YieldRoll FHE Deployment...");
+    console.log("🚀 Starting Sealary FHE Deployment...");
 
     const [employer, ...allEmployees] = await hre.ethers.getSigners();
     console.log(`Deployer / Employer address: ${employer.address}`);

@@ -239,7 +239,7 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
               className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2.5 disabled:opacity-50"
             >
               <FastForward className={`w-5 h-5 ${isWarping ? "animate-spin" : ""}`} />
-              {isWarping ? "Fast-Forwarding On-Chain..." : "⏩ Fast-Forward 30 Days"}
+              {isWarping ? "Fast-Forwarding On-Chain..." : "Fast-Forward 30 Days"}
             </button>
           </div>
         </div>
