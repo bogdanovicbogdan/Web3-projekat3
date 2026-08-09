@@ -67,13 +67,3 @@ Open your browser at **[http://localhost:3000](http://localhost:3000)**!
 - **`contracts/MockUSDC.sol`**: ERC-20 stablecoin used for payroll deposits and payouts.
 
 ---
-
-## 🏆 Hackathon Pitch Highlights
-
-- **Privacy First**: Public observers only see encrypted Zama hashes (`0xa9f8c3...`).
-- **Zero Overhead**: Gasless execution options for smooth presentation demos.
-- **Audited Yield Engine**: Integrated liquidity buffer guarantees 100% instant withdrawals.
-
----
-
-*Built with ❤️ for ETH Hackathons using Next.js 16, Ethers.js v6, Hardhat & Zama fhEVM.*
