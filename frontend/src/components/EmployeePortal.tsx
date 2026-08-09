@@ -11,7 +11,9 @@ import {
   Lock,
   Wallet,
   Clock,
-  Key
+  Key,
+  Copy,
+  Check
 } from "lucide-react";
 import { authenticateAndDecryptSalary } from "@/lib/fheClient";
 
@@ -20,6 +22,8 @@ interface EmployeePortalProps {
   employeeYieldShare: number;
   onClaimSalary: (amount: number) => void;
   liquidBuffer: number;
+  encryptedPrincipalHandle?: string;
+  encryptedYieldHandle?: string;
 }
 
 export const EmployeePortal: React.FC<EmployeePortalProps> = ({
@@ -27,6 +31,8 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
   employeeYieldShare,
   onClaimSalary,
   liquidBuffer,
+  encryptedPrincipalHandle = "0xa9f8c3e12b74051a8d023f5901198c63a789123b09f42a17b",
+  encryptedYieldHandle = "0x3c7104b2a809f176b553920194883ab109f2187a55c911d",
 }) => {
   const totalAvailable = employeeSalary + employeeYieldShare;
 
@@ -35,6 +41,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
   const [claimAmount, setClaimAmount] = useState<number>(totalAvailable);
   const [claimSuccess, setClaimSuccess] = useState<string>("");
   const [eip712Proof, setEip712Proof] = useState<string>("");
+  const [copiedHandle, setCopiedHandle] = useState<string>("");
 
   const handleReveal = async () => {
     if (isRevealed) {
@@ -44,9 +51,9 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
 
     setIsDecrypting(true);
     try {
-      const auth = await authenticateAndDecryptSalary("0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "ZAMA_EUINT64_HANDLE");
+      const auth = await authenticateAndDecryptSalary("0x70997970C51812dc3A010C7d01b50e0d17dc79C8", encryptedPrincipalHandle);
       if (auth.success) {
-        setEip712Proof(auth.signature.slice(0, 18) + "...");
+        setEip712Proof(auth.signature.slice(0, 22) + "...");
         setIsRevealed(true);
         setClaimAmount(employeeSalary + employeeYieldShare);
       }
@@ -55,6 +62,12 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
     } finally {
       setIsDecrypting(false);
     }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedHandle(label);
+    setTimeout(() => setCopiedHandle(""), 2000);
   };
 
   const handleClaim = (e: React.FormEvent) => {
@@ -116,9 +129,21 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                 ${employeeSalary.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs text-slate-400 font-semibold">USDC</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-indigo-300 font-mono text-sm font-semibold bg-slate-950/80 p-3.5 rounded-xl border border-indigo-500/20">
-                <Lock className="w-4 h-4 text-indigo-400 shrink-0" />
-                <span className="truncate">0x8a91f3e... (euint64 Ciphertext)</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-indigo-300 font-mono text-xs font-semibold bg-slate-950/90 p-3 rounded-xl border border-indigo-500/20">
+                  <div className="flex items-center gap-2 truncate">
+                    <Lock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span className="truncate">{encryptedPrincipalHandle}</span>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(encryptedPrincipalHandle, "principal")}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white shrink-0 ml-2"
+                    title="Copy Zama euint64 Ciphertext Handle"
+                  >
+                    {copiedHandle === "principal" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500 font-mono block">On-Chain Zama euint64 Ciphertext Handle</span>
               </div>
             )}
           </div>
@@ -145,9 +170,21 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                 +${employeeYieldShare.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs text-emerald-400 font-semibold">USDC</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-emerald-300 font-mono text-sm font-semibold bg-slate-950/80 p-3.5 rounded-xl border border-emerald-500/20">
-                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="truncate">0x3c7104b... (euint64 Yield Bonus)</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-emerald-300 font-mono text-xs font-semibold bg-slate-950/90 p-3 rounded-xl border border-emerald-500/20">
+                  <div className="flex items-center gap-2 truncate">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="truncate">{encryptedYieldHandle}</span>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(encryptedYieldHandle, "yield")}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white shrink-0 ml-2"
+                    title="Copy Zama euint64 Yield Handle"
+                  >
+                    {copiedHandle === "yield" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500 font-mono block">On-Chain Zama euint64 Yield Bonus Handle</span>
               </div>
             )}
           </div>

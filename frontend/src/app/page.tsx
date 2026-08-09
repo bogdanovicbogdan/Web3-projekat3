@@ -51,6 +51,8 @@ export default function Home() {
 
     const [employeeSalary, setEmployeeSalary] = useState<number>(15000);
     const [employeeYieldShare, setEmployeeYieldShare] = useState<number>(0);
+    const [encryptedPrincipalHandle, setEncryptedPrincipalHandle] = useState<string>("0xa9f8c3e12b74051a8d023f5901198c63a789123b09f42a17b");
+    const [encryptedYieldHandle, setEncryptedYieldHandle] = useState<string>("0x3c7104b2a809f176b553920194883ab109f2187a55c911d");
 
     // Čitanje stanja sa ugovora ako je čvor dostupan
     const refreshData = useCallback(async () => {
@@ -75,13 +77,19 @@ export default function Home() {
 
             const targetEmpAddress = address || "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
             try {
+                const encBal = await vault.getEmployeeEncryptedBalance(targetEmpAddress);
+                if (encBal && encBal[0]) {
+                    setEncryptedPrincipalHandle(encBal[0].toString());
+                    setEncryptedYieldHandle(encBal[1].toString());
+                }
+            } catch (e) {}
+
+            try {
                 const empBal = await vault.getEmployeeSettlementBalance(targetEmpAddress);
                 if (empBal && empBal[0]) {
                     setEmployeeSalary(Number(formatUnits(empBal[0], 6)));
                 }
-            } catch (e) {
-                // Access-controlled fallback for employee principal
-            }
+            } catch (e) {}
         } catch (e: any) {
             console.warn("Lokalni ugovor se ucitava:", e?.message);
         } finally {
@@ -277,6 +285,8 @@ export default function Home() {
                         employeeYieldShare={employeeYieldShare}
                         onClaimSalary={handleClaimSalary}
                         liquidBuffer={vaultStats.liquidBuffer}
+                        encryptedPrincipalHandle={encryptedPrincipalHandle}
+                        encryptedYieldHandle={encryptedYieldHandle}
                     />
                 )}
             </main>
