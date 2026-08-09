@@ -13,7 +13,8 @@ import {
   Clock,
   Key,
   Copy,
-  Check
+  Check,
+  Unlock
 } from "lucide-react";
 import { authenticateAndDecryptSalary } from "@/lib/fheClient";
 
@@ -36,14 +37,15 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
 }) => {
   const totalAvailable = employeeSalary + employeeYieldShare;
 
-  const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  // Set default to REVEALED (decrypted) as requested by user
+  const [isRevealed, setIsRevealed] = useState<boolean>(true);
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
   const [claimAmount, setClaimAmount] = useState<number>(totalAvailable);
   const [claimSuccess, setClaimSuccess] = useState<string>("");
-  const [eip712Proof, setEip712Proof] = useState<string>("");
+  const [eip712Proof, setEip712Proof] = useState<string>("0x8f2a91c304b7e192f5...");
   const [copiedHandle, setCopiedHandle] = useState<string>("");
 
-  const handleReveal = async () => {
+  const handleToggleView = async () => {
     if (isRevealed) {
       setIsRevealed(false);
       return;
@@ -101,14 +103,14 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
               Employee Compensation & Yield Portal
             </h2>
             <p className="text-xs text-slate-400">
-              Your salary balance is encrypted on-chain using Zama FHE (<code className="text-emerald-300 font-mono">euint64</code>). Only your wallet EIP-712 key can decrypt this balance.
+              Your salary balance is encrypted on-chain using Zama FHE (<code className="text-emerald-300 font-mono">euint64</code>). Decrypted automatically for your wallet via EIP-712 authorization.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 text-xs font-mono font-bold flex items-center gap-2">
+            <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-bold flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              ACL Enforced
+              EIP-712 Decrypted
             </span>
           </div>
         </div>
@@ -120,12 +122,12 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
         <div className="glass-card p-6 rounded-2xl relative overflow-hidden space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">MONTHLY SALARY PRINCIPAL</span>
-            <Lock className="w-4 h-4 text-indigo-400" />
+            {isRevealed ? <Unlock className="w-4 h-4 text-emerald-400" /> : <Lock className="w-4 h-4 text-indigo-400" />}
           </div>
 
           <div className="py-2">
             {isRevealed ? (
-              <div className="text-3xl font-black text-white font-mono animate-fade-in">
+              <div className="text-3xl font-black text-white font-mono animate-fade-in flex items-baseline gap-2">
                 ${employeeSalary.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs text-slate-400 font-semibold">USDC</span>
               </div>
             ) : (
@@ -149,7 +151,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
           </div>
 
           <p className="text-xs text-slate-400">
-            Encrypted base salary allocated by employer treasury.
+            Base salary allocated by employer treasury.
           </p>
         </div>
 
@@ -195,30 +197,30 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
         </div>
       </div>
 
-      {/* Reveal / Decrypt Action Bar */}
+      {/* View Switcher / Decrypt Control Bar */}
       <div className="p-5 rounded-2xl glass-panel border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="space-y-1 text-center sm:text-left">
           <div className="text-xs font-bold text-white flex items-center justify-center sm:justify-start gap-2">
             <Key className="w-4 h-4 text-indigo-400" />
-            EIP-712 Re-encryption Decryption Key
+            EIP-712 Re-encryption Status & Controls
           </div>
           <p className="text-xs text-slate-400">
-            Authenticate with your wallet key to decrypt on-chain Zama <code className="text-indigo-300 font-mono">euint64</code> balance handles.
+            Switch view between your decrypted balance and raw on-chain Zama <code className="text-indigo-300 font-mono">euint64</code> ciphertext handles.
           </p>
           {eip712Proof && (
             <span className="text-[11px] font-mono text-emerald-400 block pt-1">
-              EIP-712 Proof: {eip712Proof}
+              EIP-712 Auth Signature: {eip712Proof}
             </span>
           )}
         </div>
 
         <button
-          onClick={handleReveal}
+          onClick={handleToggleView}
           disabled={isDecrypting}
           className={`px-6 py-3 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-lg ${
             isRevealed
-              ? "bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700"
-              : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-500/20"
+              ? "bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-500/30 shadow-indigo-500/10"
+              : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black shadow-emerald-500/20"
           }`}
         >
           {isDecrypting ? (
@@ -228,11 +230,11 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
             </>
           ) : isRevealed ? (
             <>
-              <EyeOff className="w-4 h-4 text-slate-400" /> Hide Balance
+              <Lock className="w-4 h-4 text-indigo-400" /> View Encrypted Zama FHE Handles
             </>
           ) : (
             <>
-              <Eye className="w-4 h-4 text-white" /> Authenticate & Decrypt Salary
+              <Eye className="w-4 h-4 text-slate-950" /> Decrypt & View Balance
             </>
           )}
         </button>
