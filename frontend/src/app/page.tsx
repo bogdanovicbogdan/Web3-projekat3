@@ -40,9 +40,9 @@ export default function Home() {
 
     // Core Vault State (Inicijalno napunjen demo podacima)
     const [vaultStats, setVaultStats] = useState({
-        totalPrincipal: 465000,
-        liquidBuffer: 69750, // 15%
-        strategyAssets: 395250, // 85%
+        totalPrincipal: 200000,
+        liquidBuffer: 30000, // 15%
+        strategyAssets: 170000, // 85%
         totalYield: 0,
         apyBps: 750, // 7.50% APY
         strategyName: "Aave v3 Core USDC Pool",
@@ -63,7 +63,7 @@ export default function Home() {
             blockNumber: 104,
             timestamp: "Initial Setup",
             status: "Success",
-            details: "Seeded initial batch payroll for 19 staff ($465,000.00 USDC)",
+            details: "Seeded initial batch payroll for staff ($200,000.00 USDC)",
         },
         {
             id: "seed-2",
@@ -72,7 +72,7 @@ export default function Home() {
             blockNumber: 103,
             timestamp: "Initial Setup",
             status: "Success",
-            details: "Auto-routed 85% to Aave Strategy ($395,250 USDC) & 15% to Buffer ($69,750 USDC)",
+            details: "Auto-routed 85% to Aave Strategy ($170,000 USDC) & 15% to Buffer ($30,000 USDC)",
         },
     ]);
 

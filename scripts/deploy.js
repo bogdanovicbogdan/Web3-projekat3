@@ -33,10 +33,13 @@ async function main() {
 
     const recipients = allEmployees.map((e) => e.address);
 
-    // Iznosi variraju po nalogu (15k - 34k), samo radi realisticnijeg izgleda u demo-u
-    const amounts = allEmployees.map((_, i) =>
-        hre.ethers.parseUnits((15000 + (i % 5) * 5000).toString(), 6)
-    );
+    // Iznosi plata sa zbirom od tačno 200,000 USDC za 19 radnika
+    const amounts = allEmployees.map((_, i) => {
+        if (i === allEmployees.length - 1) {
+            return hre.ethers.parseUnits("18000", 6);
+        }
+        return hre.ethers.parseUnits((10000 + (i % 3) * 1000).toString(), 6);
+    });
 
     const payrollAmount = amounts.reduce((sum, a) => sum + a, 0n);
     await usdc.approve(vaultAddress, payrollAmount);

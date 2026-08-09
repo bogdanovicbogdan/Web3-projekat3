@@ -71,7 +71,7 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
   setTxLogs,
 }) => {
   // Calculator state
-  const [calcMonthlyPayroll, setCalcMonthlyPayroll] = useState<number>(500000);
+  const [calcMonthlyPayroll, setCalcMonthlyPayroll] = useState<number>(200000);
   const [calcUnclaimedDays, setCalcUnclaimedDays] = useState<number>(14);
 
   // Employee Batch List State
