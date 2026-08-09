@@ -11,8 +11,9 @@ import {
   Lock,
   Wallet,
   Clock,
-  ExternalLink
+  Key
 } from "lucide-react";
+import { authenticateAndDecryptSalary } from "@/lib/fheClient";
 
 interface EmployeePortalProps {
   employeeSalary: number;
@@ -33,19 +34,27 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
   const [claimAmount, setClaimAmount] = useState<number>(totalAvailable);
   const [claimSuccess, setClaimSuccess] = useState<string>("");
+  const [eip712Proof, setEip712Proof] = useState<string>("");
 
-  const handleReveal = () => {
+  const handleReveal = async () => {
     if (isRevealed) {
       setIsRevealed(false);
       return;
     }
 
     setIsDecrypting(true);
-    setTimeout(() => {
+    try {
+      const auth = await authenticateAndDecryptSalary("0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "ZAMA_EUINT64_HANDLE");
+      if (auth.success) {
+        setEip712Proof(auth.signature.slice(0, 18) + "...");
+        setIsRevealed(true);
+        setClaimAmount(employeeSalary + employeeYieldShare);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
       setIsDecrypting(false);
-      setIsRevealed(true);
-      setClaimAmount(employeeSalary + employeeYieldShare);
-    }, 1000);
+    }
   };
 
   const handleClaim = (e: React.FormEvent) => {
@@ -69,111 +78,154 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Header Banner */}
-      <div className="glass-panel p-6 rounded-2xl border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <Wallet className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">Employee Salary & Yield Portal</h2>
+      <div className="glass-panel p-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 shadow-xl">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1 text-center sm:text-left">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+              🔒 Zama fhEVM Confidential Storage
+            </span>
+            <h2 className="text-2xl font-bold text-white tracking-tight">
+              Employee Compensation & Yield Portal
+            </h2>
             <p className="text-xs text-slate-400">
-              Your salary & accrued yield are encrypted on-chain via Zama FHE (<code className="text-emerald-400 font-mono">euint64</code>). Only you can decrypt & claim them.
+              Your salary balance is encrypted on-chain using Zama FHE (<code className="text-emerald-300 font-mono">euint64</code>). Only your wallet EIP-712 key can decrypt this balance.
             </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-          <ShieldCheck className="w-4 h-4" /> 100% Instant Claim Guaranteed
+          <div className="flex items-center gap-2">
+            <span className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 text-xs font-mono font-bold flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              ACL Enforced
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Main Encrypted Salary Card */}
-      <div className="glass-panel p-8 rounded-3xl space-y-6 relative overflow-hidden glow-emerald">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            <Lock className="w-4 h-4 text-emerald-400" />
-            ON-CHAIN ENCRYPTED TOTAL CLAIMABLE BALANCE
+      {/* Main Balance Display Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Encrypted Principal Salary */}
+        <div className="glass-card p-6 rounded-2xl relative overflow-hidden space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">MONTHLY SALARY PRINCIPAL</span>
+            <Lock className="w-4 h-4 text-indigo-400" />
           </div>
-          <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300 font-mono">
-            Zama fhEVM Handles
-          </span>
-        </div>
 
-        <div className="py-4">
-          {isDecrypting ? (
-            <div className="flex items-center gap-3 text-indigo-400 font-mono text-xl animate-pulse">
-              <Sparkles className="w-6 h-6 animate-spin text-emerald-400" />
-              Verifying EIP-712 Signature & Decrypting FHE Ciphertext...
-            </div>
-          ) : isRevealed ? (
-            <div className="space-y-2">
-              <div className="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight flex items-baseline gap-2">
-                ${totalAvailable.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                <span className="text-lg font-semibold text-emerald-400">USDC</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
-                <span>Base Salary: <strong className="text-slate-200">${employeeSalary.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC</strong></span>
-                <span>•</span>
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" /> +${employeeYieldShare.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC Employee Yield Bonus
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="text-4xl sm:text-5xl font-black text-slate-500 font-mono tracking-widest select-none">
-              •••••••••••• USDC
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800/80">
-          <button
-            onClick={handleReveal}
-            disabled={isDecrypting}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-2 border border-slate-700"
-          >
+          <div className="py-2">
             {isRevealed ? (
-              <>
-                <EyeOff className="w-4 h-4 text-slate-400" /> Hide Confidential Salary
-              </>
+              <div className="text-3xl font-black text-white font-mono animate-fade-in">
+                ${employeeSalary.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs text-slate-400 font-semibold">USDC</span>
+              </div>
             ) : (
-              <>
-                <Eye className="w-4 h-4 text-emerald-400" /> 🔓 Decrypt & Reveal Salary & Yield (EIP-712)
-              </>
+              <div className="flex items-center gap-2 text-indigo-300 font-mono text-sm font-semibold bg-slate-950/80 p-3.5 rounded-xl border border-indigo-500/20">
+                <Lock className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="truncate">0x8a91f3e... (euint64 Ciphertext)</span>
+              </div>
             )}
-          </button>
-
-          <div className="text-xs text-slate-400 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Uncollected salary earns <strong>+7.5% APY</strong> daily</span>
           </div>
-        </div>
-      </div>
 
-      {/* Instant Claim Module */}
-      <div className="glass-panel p-6 rounded-2xl space-y-6">
-        <div>
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <ArrowDownRight className="w-5 h-5 text-emerald-400" />
-            Instant Salary & Yield Withdrawal
-          </h3>
           <p className="text-xs text-slate-400">
-            Withdraw your salary and 50% accrued investment yield at any second. Funds are instantly disbursed from the Vault Liquid Buffer (${liquidBuffer.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC buffer available).
+            Encrypted base salary allocated by employer treasury.
           </p>
         </div>
 
-        <form onSubmit={handleClaim} className="space-y-4">
+        {/* Accrued DeFi Yield Bonus */}
+        <div className="glass-card p-6 rounded-2xl relative overflow-hidden space-y-4 border-emerald-500/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4" /> ACCRUED DEFI YIELD BONUS
+            </span>
+            <span className="text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
+              50% Yield Share
+            </span>
+          </div>
+
+          <div className="py-2">
+            {isRevealed ? (
+              <div className="text-3xl font-black text-emerald-300 font-mono animate-fade-in flex items-baseline gap-1">
+                +${employeeYieldShare.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs text-emerald-400 font-semibold">USDC</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-emerald-300 font-mono text-sm font-semibold bg-slate-950/80 p-3.5 rounded-xl border border-emerald-500/20">
+                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="truncate">0x3c7104b... (euint64 Yield Bonus)</span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-slate-400">
+            Bonus interest earned from idle payroll capital deployed in Aave v3.
+          </p>
+        </div>
+      </div>
+
+      {/* Reveal / Decrypt Action Bar */}
+      <div className="p-5 rounded-2xl glass-panel border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="space-y-1 text-center sm:text-left">
+          <div className="text-xs font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+            <Key className="w-4 h-4 text-indigo-400" />
+            EIP-712 Re-encryption Decryption Key
+          </div>
+          <p className="text-xs text-slate-400">
+            Authenticate with your wallet key to decrypt on-chain Zama <code className="text-indigo-300 font-mono">euint64</code> balance handles.
+          </p>
+          {eip712Proof && (
+            <span className="text-[11px] font-mono text-emerald-400 block pt-1">
+              EIP-712 Proof: {eip712Proof}
+            </span>
+          )}
+        </div>
+
+        <button
+          onClick={handleReveal}
+          disabled={isDecrypting}
+          className={`px-6 py-3 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-lg ${
+            isRevealed
+              ? "bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700"
+              : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-500/20"
+          }`}
+        >
+          {isDecrypting ? (
+            <>
+              <ShieldCheck className="w-4 h-4 animate-spin text-indigo-300" />
+              Authenticating EIP-712 Proof...
+            </>
+          ) : isRevealed ? (
+            <>
+              <EyeOff className="w-4 h-4 text-slate-400" /> Hide Balance
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4 text-white" /> Authenticate & Decrypt Salary
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Claim Payout Form */}
+      <div className="glass-panel p-6 rounded-2xl space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div>
-            <div className="flex justify-between text-xs font-medium text-slate-300 mb-1.5">
-              <span>Withdrawal Amount (USDC):</span>
-              <button
-                type="button"
-                onClick={() => setClaimAmount(employeeSalary + employeeYieldShare)}
-                className="text-emerald-400 hover:underline font-semibold"
-              >
-                Max (${(employeeSalary + employeeYieldShare).toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC)
-              </button>
-            </div>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <ArrowDownRight className="w-5 h-5 text-emerald-400" />
+              Instant Salary Payout Claim
+            </h3>
+            <p className="text-xs text-slate-400">
+              Withdraw available salary principal and earned yield bonus directly to your wallet in USDC.
+            </p>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 block uppercase font-semibold">TOTAL CLAIMABLE</span>
+            <span className="text-lg font-extrabold text-white font-mono">
+              ${totalAvailable.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleClaim} className="space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-2">
+              Withdrawal Amount (USDC):
+            </label>
             <input
               type="number"
               value={claimAmount}
@@ -202,11 +254,11 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
 
           <button
             type="submit"
-            disabled={employeeSalary + employeeYieldShare <= 0}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-40"
+            disabled={totalAvailable <= 0}
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-40"
           >
-            <ArrowDownRight className="w-5 h-5" />
-            Instant Claim ${claimAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC
+            <Wallet className="w-5 h-5 text-slate-950" />
+            Claim ${claimAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDC to Wallet
           </button>
         </form>
       </div>
