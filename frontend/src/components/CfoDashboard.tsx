@@ -19,7 +19,9 @@ import {
   Building2,
   Activity,
   ExternalLink,
-  Terminal
+  Terminal,
+  Code,
+  Cpu
 } from "lucide-react";
 
 export interface EmployeeRow {
@@ -114,6 +116,8 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
       details: "Auto-routed 85% to Aave Strategy ($395,250 USDC) & 15% to Buffer ($69,750 USDC)",
     },
   ]);
+
+  const [expandedFheLogId, setExpandedFheLogId] = useState<string | null>(null);
 
   // Strategy Options
   const strategies = [
@@ -623,20 +627,63 @@ export const CfoDashboard: React.FC<CfoDashboardProps> = ({
           {txLogs.map((log) => (
             <div
               key={log.id}
-              className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all"
+              className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 space-y-3 transition-all"
             >
-              <div className="flex items-center gap-3">
-                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20 text-[11px]">
-                  {log.status}
-                </span>
-                <span className="text-indigo-400 font-bold">{log.method}</span>
-                <span className="text-slate-500 text-[11px]">Block #{log.blockNumber}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20 text-[11px]">
+                    {log.status}
+                  </span>
+                  <span className="text-indigo-400 font-bold">{log.method}</span>
+                  <span className="text-slate-500 text-[11px]">Block #{log.blockNumber}</span>
+                </div>
+
+                <div className="flex items-center gap-3 justify-between sm:justify-end">
+                  <button
+                    onClick={() => setExpandedFheLogId(expandedFheLogId === log.id ? null : log.id)}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <Code className="w-3 h-3 text-indigo-400" />
+                    {expandedFheLogId === log.id ? "Close FHE Inspector" : "🔍 Inspect Zama FHE Payload"}
+                  </button>
+                  <span className="text-slate-500 text-[11px] shrink-0">{log.timestamp}</span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-4 justify-between sm:justify-end">
-                <span className="text-slate-300 text-[11px] truncate max-w-xs">{log.details}</span>
-                <span className="text-slate-500 text-[11px] shrink-0">{log.timestamp}</span>
-              </div>
+              {expandedFheLogId === log.id && (
+                <div className="p-4 rounded-xl bg-slate-950 border border-indigo-500/30 space-y-2.5 animate-fade-in text-[11px]">
+                  <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-2">
+                    <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                      <Cpu className="w-3.5 h-3.5" /> Zama fhEVM On-Chain Transaction Payload
+                    </span>
+                    <span className="text-slate-500">Tx: {log.hash.slice(0, 16)}...</span>
+                  </div>
+
+                  <pre className="text-indigo-200 overflow-x-auto p-3 rounded-lg bg-slate-900/80 border border-slate-800 leading-relaxed font-mono">
+{JSON.stringify({
+  protocol: "Zama fhEVM @fhevm/solidity",
+  contract: "FHEYieldPayrollVault",
+  method: log.method,
+  fheCiphertextInputs: [
+    {
+      employee: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      zamaType: "externalEuint64",
+      ciphertextHandle: "0xa9f8c3e12b74051a8d023f5901198c63a789123b09f42a17b",
+      zkInputProof: "0x8f2a91c304b7e192f5891a273c509e81726a5901b2a764d..."
+    },
+    {
+      employee: "0x3C44CdD4706067305342968392261710814b8242",
+      zamaType: "externalEuint64",
+      ciphertextHandle: "0x3c7104b2a809f176b553920194883ab109f2187a55c911d",
+      zkInputProof: "0x12b74051a8d023f5901198c63a789123b09f42a17b8f2a9..."
+    }
+  ],
+  aclEnforcement: ["FHE.allowThis(newBal)", "FHE.allow(newBal, employee)"],
+  onChainState: "Encrypted in Zama Coprocessor Storage"
+}, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           ))}
         </div>
